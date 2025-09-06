@@ -23,7 +23,7 @@ import { DashboardContent } from "src/layouts/dashboard";
 
 import { Iconify } from "src/components/iconify";
 
-const API_URL = "http://localhost:5000/interests";
+const API_URL = `${import.meta.env.VITE_API_URL}/interests`;
 
 export function ControlPanelView() {
   const [interests, setInterests] = useState<any[]>([]);

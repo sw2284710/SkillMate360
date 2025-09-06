@@ -1,8 +1,7 @@
 import axios from 'axios';
 
-console.log(import.meta.env.VITE_API_URL);
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://skillmate360.vercel.app',
+  baseURL: import.meta.env.VITE_API_URL || 'https://edu-backend-6f61.onrender.com',
   headers: {
     'Content-Type': 'application/json',
   },
