@@ -40,7 +40,6 @@ export function SignInView() {
     });
 
     const { access_token } = response.data.data;
-    console.log('Access Token:', access_token);
     localStorage.setItem('token', access_token);
     router.push('/');
   } catch (err: any) {
