@@ -14,9 +14,8 @@ import { useRouter } from 'src/routes/hooks';
 
 import api from 'src/utils/api'; // your helper file
 
+import { Logo } from 'src/components/logo';
 import { Iconify } from 'src/components/iconify';
-
-
 
 // ----------------------------------------------------------------------
 
@@ -51,6 +50,7 @@ export function SignInView() {
 
   return (
     <>
+      
       <Box
         sx={{
           gap: 1.5,
@@ -60,7 +60,8 @@ export function SignInView() {
           mb: 5,
         }}
       >
-        <Typography variant="h5">SkillMate360 Admin Sign in</Typography>
+        <Logo pngSrc="/assets/images/logo.png" />
+        <Typography variant="h5">Admin Sign In</Typography>
         <Typography
           variant="body2"
           sx={{
