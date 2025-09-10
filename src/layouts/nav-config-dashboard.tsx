@@ -25,6 +25,16 @@ export const navData = [
     icon: <Iconify width={22} icon="solar:settings-bold-duotone" />,
   },
   {
+    title: 'Category',
+    path: '/category',
+    icon: <Iconify width={22} icon="solar:settings-bold-duotone" />,
+  },
+  {
+    title: 'Course',
+    path: '/course',
+    icon: <Iconify width={22} icon="solar:settings-bold-duotone" />,
+  },
+  {
     title: 'User',
     path: '/user',
     icon: icon('ic-user'),

@@ -19,6 +19,8 @@ export const SignInPage = lazy(() => import('src/pages/sign-in'));
 export const ProductsPage = lazy(() => import('src/pages/products'));
 export const Page404 = lazy(() => import('src/pages/page-not-found'));
 export const ControlPanelPage = lazy(() => import('src/pages/control-panel'));
+export const CoursePage = lazy(() => import('../pages/course'));
+export const CategoryPage = lazy(() => import('../pages/category'));
 import ProtectedRoute from 'src/components/ProtectedRoute';
 
 const renderFallback = () => (
@@ -68,6 +70,22 @@ export const routesSection: RouteObject[] = [
         ),
       },
       {
+        path: 'category',
+        element: (
+          <ProtectedRoute>
+            <CategoryPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'course',
+        element: (
+          <ProtectedRoute>
+            <CoursePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'user',
         element: (
           <ProtectedRoute>
@@ -84,6 +102,14 @@ export const routesSection: RouteObject[] = [
         ),
       },
       {
+        path: 'blog',
+        element: (
+          <ProtectedRoute>
+            <BlogPage />
+          </ProtectedRoute>
+        ),
+      },
+      /*{
       path: 'blog',
       element: (
         <ProtectedRoute>
@@ -108,7 +134,7 @@ export const routesSection: RouteObject[] = [
           ),
         },
       ],
-    },
+    },*/
     ],
   },
   {
