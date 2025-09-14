@@ -1,12 +1,10 @@
 // types/course.ts
-export interface Course {
-  _id: string;
+export interface FormData {
   title: string;
   description: string;
+  category: string;
   price: number;
-  discountPrice: number;
   lessonsCount: number;
-  rating: number;
-  category?: { _id: string; name: string };
-  thumbnail?: string;
+  discountPrice?: number | null;
+  rating?: number | null;
 }

@@ -1,12 +1,13 @@
+import * as yup from "yup";
 import { useState, useEffect } from "react";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { useForm, SubmitHandler, FieldValues } from "react-hook-form";
 
 import {
   Box,
-  Chip,
   Button,
   TextField,
   Typography,
-  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -15,6 +16,8 @@ import {
   Select,
   FormControl,
   InputLabel,
+  Collapse,
+  IconButton,
 } from "@mui/material";
 
 import api from "src/utils/api";
@@ -23,215 +26,216 @@ import { DashboardContent } from "src/layouts/dashboard";
 
 import { Iconify } from "src/components/iconify";
 
-import { CourseTable } from "./course-table"; // adjust path
+import { CourseTable } from "./course-table";
 
 const API_URL = `${import.meta.env.VITE_API_URL}/courses`;
 const CATEGORY_API = `${import.meta.env.VITE_API_URL}/categories`;
 
+interface FormData {
+  title: string;
+  description: string;
+  category: string;
+  price: number;
+  lessonsCount: number;
+  discountPrice: number | null; // optional remove, use null as default
+  rating: number | null; // optional remove
+}
+
+const schema = yup.object({
+  title: yup.string().required("Title is required"),
+  description: yup.string().required("Description is required"),
+  category: yup.string().required("Category is required"),
+  price: yup
+    .number()
+    .typeError("Price must be a number")
+    .positive("Price must be greater than zero")
+    .required("Price is required"),
+  lessonsCount: yup
+    .number()
+    .typeError("Lessons count must be a number")
+    .min(1, "At least one lesson is required")
+    .required("Lessons count is required"),
+  discountPrice: yup
+    .number()
+    .nullable()
+    .optional()
+    .transform((value, originalValue) =>
+      String(originalValue).trim() === "" ? null : value
+    )
+    .max(yup.ref("price"), "Discount must be less than price"),
+  rating: yup
+    .number()
+    .typeError("Rating must be a number")
+    .nullable()
+    .transform((value, originalValue) =>
+      String(originalValue).trim() === "" ? null : value
+    )
+    .min(0, "Rating must be at least 0")
+    .max(5, "Rating must be at most 5"),
+});
+
 export function CourseView() {
   const [courses, setCourses] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
-
-  // Add course form state
-  const [newCourse, setNewCourse] = useState("");
-  const [newDesc, setNewDesc] = useState("");
-  const [newCategory, setNewCategory] = useState("");
-  const [newPrice, setNewPrice] = useState("");
-  const [newDiscountPrice, setNewDiscountPrice] = useState("");
-  const [newLessonsCount, setNewLessonsCount] = useState("");
-  const [newRating, setNewRating] = useState("");
-  const [newImage, setNewImage] = useState<File | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<any | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-
-  // Edit course form state
-  const [editId, setEditId] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState("");
-  const [editDesc, setEditDesc] = useState("");
-  const [editCategory, setEditCategory] = useState("");
-  const [editPrice, setEditPrice] = useState("");
-  const [editDiscountPrice, setEditDiscountPrice] = useState("");
-  const [editLessonsCount, setEditLessonsCount] = useState("");
-  const [editRating, setEditRating] = useState("");
-  const [editImage, setEditImage] = useState<File | null>(null);
-  const [editPreviewImage, setEditPreviewImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   // Fetch courses
   useEffect(() => {
     api.get(API_URL).then((res) => setCourses(res.data.data));
   }, []);
 
-  console.log("Courses:", courses);
-
   // Fetch categories
   useEffect(() => {
     api.get(CATEGORY_API).then((res) => setCategories(res.data.data));
   }, []);
 
-  // Handle Add
-  const handleAdd = async () => {
-    if (!newCourse || !newCategory) return;
+  // RHF for Add
+  const {
+  register: addRegister,
+  handleSubmit: addHandleSubmit,
+  reset: addReset,
+  formState: { errors: addErrors, isSubmitting: addSubmitting },
+} = useForm<FormData>({
+  resolver: yupResolver(schema) as any, // <-- TypeScript fix
+  defaultValues: {
+    title: "",
+    description: "",
+    category: "",
+    price: 0,
+    lessonsCount: 1,
+    discountPrice: null,
+    rating: null,
+  },
+});
 
-    const formData = new FormData();
-    formData.append("title", newCourse.trim());
-    formData.append("description", newDesc.trim());
-    formData.append("category", newCategory);
-    formData.append("price", newPrice || "0");
-    formData.append("discountPrice", newDiscountPrice || "0");
-    formData.append("lessonsCount", newLessonsCount || "1");
-    formData.append("rating", newRating || "0");
-    if (newImage) formData.append("thumbnail", newImage);
+  // RHF for Edit
+  const {
+    register: editRegister,
+    handleSubmit: editHandleSubmit,
+    reset: editReset,
+    formState: { errors: editErrors, isSubmitting: editSubmitting },
+  } = useForm<FormData>({
+    resolver: yupResolver(schema) as any, // <-- TypeScript fix
+  });
 
-    const res = await api.post(API_URL, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-
-    setCourses([res.data.data, ...courses]);
-    setNewCourse("");
-    setNewDesc("");
-    setNewCategory("");
-    setNewPrice("");
-    setNewDiscountPrice("");
-    setNewLessonsCount("");
-    setNewRating("");
-    setNewImage(null);
-    setPreviewImage(null);
-  };
-
-  // Handle Delete
-  const handleDelete = async (id: string) => {
-    await api.delete(`${API_URL}/${id}`);
-    setCourses(courses.filter((c) => c._id !== id));
-  };
-
-  // Open Edit Dialog
-  const handleEditOpen = (id: string) => {
-    const course = courses.find((c) => c._id === id);
-    if (!course) return;
-
-    setEditId(course._id);
-    setEditValue(course.title || "");
-    setEditDesc(course.description || "");
-    setEditCategory(course.category?._id || "");
-    setEditPrice(course.price?.toString() || "");
-    setEditDiscountPrice(course.discountPrice?.toString() || "");
-    setEditLessonsCount(course.lessonsCount?.toString() || "");
-    setEditRating(course.rating?.toString() || "");
-    setEditImage(null);
-    setEditPreviewImage(course.thumbnail || null);
-  };
-
-  // Handle Save Edit
-  const handleEditSave = async () => {
-    if (!editId) return;
-
-    const formData = new FormData();
-    formData.append("title", editValue.trim());
-    formData.append("description", editDesc.trim());
-    formData.append("category", editCategory);
-    formData.append("price", editPrice || "0");
-    formData.append("discountPrice", editDiscountPrice || "0");
-    formData.append("lessonsCount", editLessonsCount || "1");
-    formData.append("rating", editRating || "0");
-    if (editImage) formData.append("thumbnail", editImage);
-
+  const handleAddSubmit: SubmitHandler<FormData> = async (data) => {
     try {
-      const res = await api.put(`${API_URL}/${editId}`, formData, {
+      const formData = new FormData();
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) formData.append(key, value.toString());
+      });
+      if (imageFile) formData.append("thumbnail", imageFile);
+
+      const res = await api.post(API_URL, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-
-      setCourses(
-        courses.map((c) => (c._id === editId ? res.data.data : c))
-      );
-
-      // Reset edit state
-      setEditId(null);
-      setEditValue("");
-      setEditDesc("");
-      setEditCategory("");
-      setEditPrice("");
-      setEditDiscountPrice("");
-      setEditLessonsCount("");
-      setEditRating("");
-      setEditImage(null);
-      setEditPreviewImage(null);
+      setCourses([res.data.data, ...courses]);
+      addReset();
+      setPreviewImage(null);
+      setImageFile(null);
+      setAddOpen(false);
     } catch (err) {
-      console.error("Failed to save edit:", err);
+      console.error(err);
     }
   };
 
+  const handleEditSubmit: SubmitHandler<FormData> = async (data) => {
+    if (!editingCourse) return;
+    try {
+      const formData = new FormData();
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) formData.append(key, value.toString());
+      });
+      if (imageFile) formData.append("thumbnail", imageFile);
+
+      const res = await api.put(`${API_URL}/${editingCourse._id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      setCourses(courses.map((c) => (c._id === editingCourse._id ? res.data.data : c)));
+      editReset();
+      setPreviewImage(null);
+      setImageFile(null);
+      setEditOpen(false);
+      setEditingCourse(null);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const startEdit = async (course: any) => {
+  try {
+    const res = await api.get(`${API_URL}/${course}`);
+    const freshCourse = res.data.data;
+
+    setEditingCourse(freshCourse);
+    editReset({
+      title: freshCourse.title || "",
+      description: freshCourse.description || "",
+      category: freshCourse.category || "",
+      price: freshCourse.price || 0,
+      lessonsCount: freshCourse.lessonsCount || 1,
+      discountPrice: freshCourse.discountPrice ?? null,
+      rating: freshCourse.rating ?? null,
+    });
+    setPreviewImage(freshCourse.thumbnail ?? null);
+    setEditOpen(true);
+  } catch (err) {
+    console.error("Failed to fetch course details", err);
+  }
+};
+
+
   return (
     <DashboardContent>
-      {/* Add Course Form */}
-      <Box sx={{ mb: 5, display: "flex", alignItems: "center" }}>
+      {/* Add Course */}
+      <Box sx={{ mb: 2, display: "flex", alignItems: "center" }}>
         <Typography variant="h4" sx={{ flexGrow: 1 }}>
-          Add Course
+          Courses
         </Typography>
+        <Button
+          variant="contained"
+          startIcon={<Iconify icon={addOpen ? "eva:arrow-ios-upward-fill" : "eva:arrow-ios-downward-fill"} />}
+          onClick={() => setAddOpen(!addOpen)}
+        >
+          {addOpen ? "Collapse Add Form" : "Add New Course"}
+        </Button>
       </Box>
 
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 3 }}>
-        <TextField
-          label="Course Title"
-          variant="outlined"
-          value={newCourse}
-          onChange={(e) => setNewCourse(e.target.value)}
-          fullWidth
-        />
-        <TextField
-          label="Price"
-          type="number"
-          value={newPrice}
-          onChange={(e) => setNewPrice(e.target.value)}
-          fullWidth
-        />
-        <TextField
-          label="Discount Price"
-          type="number"
-          value={newDiscountPrice}
-          onChange={(e) => setNewDiscountPrice(e.target.value)}
-          fullWidth
-        />
-        <TextField
-          label="Lessons Count"
-          type="number"
-          value={newLessonsCount}
-          onChange={(e) => setNewLessonsCount(e.target.value)}
-          fullWidth
-        />
-        <TextField
-          label="Rating (0-5)"
-          type="number"
-          inputProps={{ min: 0, max: 5, step: 0.1 }}
-          value={newRating}
-          onChange={(e) => setNewRating(e.target.value)}
-          fullWidth
-        />
+      <Collapse in={addOpen}>
+        <Box component="form" onSubmit={addHandleSubmit(handleAddSubmit)} sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 3 }}>
+          <TextField label="Course Title" fullWidth {...addRegister("title")} error={!!addErrors.title} helperText={addErrors.title?.message} />
+          <TextField label="Description" multiline rows={3} fullWidth {...addRegister("description")} error={!!addErrors.description} helperText={addErrors.description?.message} />
+          <FormControl fullWidth error={!!addErrors.category}>
+            <InputLabel>Category</InputLabel>
+            <Select {...addRegister("category")} defaultValue="">
+              {categories.map((cat) => (
+                <MenuItem key={cat._id} value={cat._id}>
+                  {cat.name}
+                </MenuItem>
+              ))}
+            </Select>
+            <Typography color="error" variant="caption">
+              {addErrors.category?.message}
+            </Typography>
+          </FormControl>
+          <TextField label="Price" type="number" fullWidth {...addRegister("price")} error={!!addErrors.price} helperText={addErrors.price?.message} />
+          <TextField label="Discount Price" type="number" fullWidth {...addRegister("discountPrice")} error={!!addErrors.discountPrice} helperText={addErrors.discountPrice?.message} />
+          <TextField label="Lessons Count" type="number" fullWidth {...addRegister("lessonsCount")} error={!!addErrors.lessonsCount} helperText={addErrors.lessonsCount?.message} />
+          <TextField
+            label="Rating (0-5)"
+            type="number"
+            inputProps={{ step: "0.1", min: 0, max: 5 }} // <-- allow decimals
+            fullWidth
+            {...addRegister("rating")}
+            error={!!addErrors.rating}
+            helperText={addErrors.rating?.message}
+          />
 
-        <FormControl fullWidth>
-          <InputLabel>Category</InputLabel>
-          <Select
-            value={newCategory}
-            onChange={(e) => setNewCategory(e.target.value)}
-            label="Category"
-          >
-            {categories.map((cat) => (
-              <MenuItem key={cat._id} value={cat._id}>
-                {cat.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        <TextField
-          label="Description"
-          variant="outlined"
-          multiline
-          rows={3}
-          value={newDesc}
-          onChange={(e) => setNewDesc(e.target.value)}
-          fullWidth
-        />
-
-        <Box>
           <Button variant="outlined" component="label">
             Upload Image
             <input
@@ -240,140 +244,134 @@ export function CourseView() {
               accept="image/*"
               onChange={(e) => {
                 const file = e.target.files?.[0] || null;
-                setNewImage(file);
+                setImageFile(file);
                 if (file) setPreviewImage(URL.createObjectURL(file));
               }}
             />
           </Button>
-          {previewImage && (
-            <Box mt={2}>
-              <img
-                src={previewImage}
-                alt="Preview"
-                width={120}
-                style={{ borderRadius: 8 }}
-              />
-            </Box>
-          )}
+          {previewImage && <img src={previewImage} alt="Preview" width={120} style={{ borderRadius: 8 }} />}
+
+          <Button type="submit" variant="contained" disabled={addSubmitting}>
+            {addSubmitting ? "Saving..." : "Save"}
+          </Button>
         </Box>
+      </Collapse>
 
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<Iconify icon="mingcute:add-line" />}
-          onClick={handleAdd}
-        >
-          Add
-        </Button>
-      </Box>
-
-      {/* Courses Table */}
-      <CourseTable
-        courses={courses}
-        onEdit={handleEditOpen}
-        onDelete={handleDelete}
-      />
-
-      {/* Edit Course Dialog */}
-      <Dialog
-        open={!!editId}
-        onClose={() => setEditId(null)}
-        fullWidth
-        maxWidth="sm"
-      >
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>Edit Course</DialogTitle>
-        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <TextField
-            label="Course Title"
-            fullWidth
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-          />
-          <TextField
-            label="Description"
-            fullWidth
-            multiline
-            rows={3}
-            value={editDesc}
-            onChange={(e) => setEditDesc(e.target.value)}
-          />
-          <FormControl fullWidth>
-            <InputLabel>Category</InputLabel>
-            <Select
-              value={editCategory}
-              onChange={(e) => setEditCategory(e.target.value)}
-              label="Category"
-            >
-              {categories.map((cat) => (
-                <MenuItem key={cat._id} value={cat._id}>
-                  {cat.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+        <DialogContent>
+          <Box
+            component="form"
+            onSubmit={editHandleSubmit(handleEditSubmit)}
+            sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
+          >
+            <TextField
+              label="Course Title"
+              fullWidth
+              {...editRegister("title")}
+              error={!!editErrors.title}
+              helperText={editErrors.title?.message}
+            />
+            <TextField
+              label="Description"
+              multiline
+              rows={3}
+              fullWidth
+              {...editRegister("description")}
+              error={!!editErrors.description}
+              helperText={editErrors.description?.message}
+            />
+            <FormControl fullWidth error={!!editErrors.category}>
+              <InputLabel>Category</InputLabel>
+              <Select {...editRegister("category")} defaultValue="">
+                {categories.map((cat) => (
+                  <MenuItem key={cat._id} value={cat._id}>
+                    {cat.name}
+                  </MenuItem>
+                ))}
+              </Select>
+              <Typography color="error" variant="caption">
+                {editErrors.category?.message}
+              </Typography>
+            </FormControl>
 
-          <TextField
-            label="Price"
-            type="number"
-            value={editPrice}
-            onChange={(e) => setEditPrice(e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="Discount Price"
-            type="number"
-            value={editDiscountPrice}
-            onChange={(e) => setEditDiscountPrice(e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="Lessons Count"
-            type="number"
-            value={editLessonsCount}
-            onChange={(e) => setEditLessonsCount(e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="Rating (0-5)"
-            type="number"
-            value={editRating}
-            onChange={(e) => setEditRating(e.target.value)}
-            fullWidth
-          />
+            <TextField
+              label="Price"
+              type="number"
+              fullWidth
+              {...editRegister("price")}
+              error={!!editErrors.price}
+              helperText={editErrors.price?.message}
+            />
+            <TextField
+              label="Discount Price"
+              type="number"
+              fullWidth
+              {...editRegister("discountPrice")}
+              error={!!editErrors.discountPrice}
+              helperText={editErrors.discountPrice?.message}
+            />
+            <TextField
+              label="Lessons Count"
+              type="number"
+              fullWidth
+              {...editRegister("lessonsCount")}
+              error={!!editErrors.lessonsCount}
+              helperText={editErrors.lessonsCount?.message}
+            />
+            <TextField
+              label="Rating (0-5)"
+              type="number"
+              inputProps={{ step: "0.1", min: 0, max: 5 }} // <-- allow decimals
+              fullWidth
+              {...editRegister("rating")}
+              error={!!editErrors.rating}
+              helperText={editErrors.rating?.message}
+            />
 
-          <Box>
             <Button variant="outlined" component="label">
-              Upload New Image
+              Upload Image
               <input
                 type="file"
                 hidden
                 accept="image/*"
                 onChange={(e) => {
                   const file = e.target.files?.[0] || null;
-                  setEditImage(file);
-                  if (file) setEditPreviewImage(URL.createObjectURL(file));
+                  setImageFile(file);
+                  setPreviewImage(file ? URL.createObjectURL(file) : previewImage);
                 }}
               />
             </Button>
-            {editPreviewImage && (
-              <Box mt={2}>
-                <img
-                  src={editPreviewImage}
-                  alt="Preview"
-                  width={120}
-                  style={{ borderRadius: 8 }}
-                />
-              </Box>
+
+            {previewImage && (
+              <img src={previewImage} alt="Preview" width={120} style={{ borderRadius: 8 }} />
             )}
+
+            <DialogActions sx={{ px: 0 }}>
+              <Button onClick={() => setEditOpen(false)}>Cancel</Button>
+              <Button type="submit" variant="contained" disabled={editSubmitting}>
+                {editSubmitting ? "Saving..." : "Save"}
+              </Button>
+            </DialogActions>
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditId(null)}>Cancel</Button>
-          <Button variant="contained" onClick={handleEditSave}>
-            Save
-          </Button>
-        </DialogActions>
       </Dialog>
+
+
+
+      <CourseTable
+        courses={courses}
+        onEdit={startEdit}
+        onDelete={async (courseId: string) => {
+          try {
+            await api.delete(`${API_URL}/${courseId}`);
+            setCourses(courses.filter((c) => c._id !== courseId));
+          } catch (err) {
+            console.error(err);
+          }
+        }}
+      />
     </DashboardContent>
   );
 }
