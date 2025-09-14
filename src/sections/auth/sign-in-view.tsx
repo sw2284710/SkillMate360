@@ -39,6 +39,13 @@ export function SignInView() {
     });
 
     const { access_token } = response.data.data;
+    const userDetails = {
+      fullName: response.data.data.user.name,
+      email: response.data.data.user.email,
+      profilePic: "assets/images/avatar/avatar-2.webp", // or avatar URL
+    };
+
+    localStorage.setItem("userDetails", JSON.stringify(userDetails));
     localStorage.setItem('token', access_token);
     router.push('/');
   } catch (err: any) {

@@ -1,7 +1,7 @@
 import type { IconButtonProps } from '@mui/material/IconButton';
 
-import { useState, useCallback } from 'react';
 import { useNavigate } from "react-router-dom";
+import { useState, useCallback, useEffect  } from 'react';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -28,12 +28,26 @@ export type AccountPopoverProps = IconButtonProps & {
   }[];
 };
 
+interface User {
+  fullName: string;
+  email: string;
+  profilePic?: string;
+}
+
 export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps) {
   const router = useRouter();
-
   const pathname = usePathname();
+  const navigate = useNavigate();
 
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(null);
+  const [user, setUser] = useState<User | null>(null); // New state
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userDetails");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
 
   const handleOpenPopover = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     setOpenPopover(event.currentTarget);
@@ -50,10 +64,11 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
     },
     [handleClosePopover, router]
   );
-  const navigate = useNavigate();
+
   const handleLogout = () => {
-    localStorage.removeItem("token"); // token clear
-    navigate("/sign-in"); // redirect
+    localStorage.removeItem("token");
+    localStorage.removeItem("userDetails");
+    navigate("/sign-in");
   };
 
   return (
@@ -70,8 +85,8 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
         }}
         {...other}
       >
-        <Avatar src={_myAccount.photoURL} alt={_myAccount.displayName} sx={{ width: 1, height: 1 }}>
-          {_myAccount.displayName.charAt(0).toUpperCase()}
+        <Avatar src={user?.profilePic} alt={user?.fullName}>
+          {user?.fullName?.charAt(0).toUpperCase()}
         </Avatar>
       </IconButton>
 
@@ -81,19 +96,15 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
         onClose={handleClosePopover}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        slotProps={{
-          paper: {
-            sx: { width: 200 },
-          },
-        }}
+        slotProps={{ paper: { sx: { width: 200 } } }}
       >
         <Box sx={{ p: 2, pb: 1.5 }}>
           <Typography variant="subtitle2" noWrap>
-            {_myAccount?.displayName}
+            {user?.fullName || "Unknown User"}
           </Typography>
 
           <Typography variant="body2" sx={{ color: 'text.secondary' }} noWrap>
-            {_myAccount?.email}
+            {user?.email || "No Email"}
           </Typography>
         </Box>
 
