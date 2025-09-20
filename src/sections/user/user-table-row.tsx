@@ -76,6 +76,23 @@ export function UserTableRow({ row, selected, onSelectRow }: UserTableRowProps) 
             
         <TableCell>{row.role.toUpperCase()}</TableCell>
 
+        <TableCell component="th" scope="row">
+          <Box
+            sx={{
+              gap: 2,
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+              <span>{row.educationLevel ?? 'N/A'}</span>
+              <span style={{ fontSize: '0.875rem', color: 'gray' }}>
+                {row.educationMedium ?? 'N/A'}
+              </span>
+            </Box>
+          </Box>
+        </TableCell>
+
         <TableCell align="center">
           {row.isVerified ? (
             <Iconify width={22} icon="solar:check-circle-bold" sx={{ color: 'success.main' }} />

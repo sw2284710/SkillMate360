@@ -110,6 +110,7 @@ export function UserView() {
                   { id: 'name', label: 'Name' },
                   { id: 'phone', label: 'Phone' },
                   { id: 'role', label: 'Role' },
+                  { id: 'educationLevel', label: 'Education' },
                   { id: 'isVerified', label: 'Verified', align: 'center' },
                   { id: 'status', label: 'Status' },
                   { id: '' },
