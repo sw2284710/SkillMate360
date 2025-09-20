@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
 import Avatar from '@mui/material/Avatar';
 import Popover from '@mui/material/Popover';
 import TableRow from '@mui/material/TableRow';
@@ -22,9 +23,9 @@ export type UserProps = {
   phone: string;
   role: string;
   status: string;
-  gender: string; 
-  educationLevel: string;  
-  educationMedium: string;  
+  gender: string;
+  educationLevel: string;
+  educationMedium: string;
   profilePic: string;
   isVerified: boolean;
 };
@@ -71,12 +72,29 @@ export function UserTableRow({ row, selected, onSelectRow }: UserTableRowProps) 
               <span style={{ fontSize: '0.875rem', color: 'gray' }}>
                 {row.email ?? 'N/A'}
               </span>
+
+              {row.gender ? (
+                <Chip
+                  label={row.gender}
+                  size="small"
+                  color={row.gender === 'Male' ? 'primary' : 'secondary'}
+                  variant="outlined"
+                  sx={{ mt: 0.5, width: 'fit-content' }}
+                />
+              ) : (
+                <Chip
+                  label="Not Specified"
+                  variant="outlined"
+                  size="small"
+                  sx={{ mt: 0.5, width: 'fit-content' }}
+                />
+              )}
             </Box>
           </Box>
         </TableCell>
 
         <TableCell>{row.phone}</TableCell>
-            
+
         <TableCell>{row.role.toUpperCase()}</TableCell>
 
         <TableCell component="th" scope="row">
