@@ -14,7 +14,7 @@ import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
-
+const API_URL = `${import.meta.env.VITE_API_URL}`;
 export type UserProps = {
   _id: string;
   name: string;
@@ -61,7 +61,10 @@ export function UserTableRow({ row, selected, onSelectRow }: UserTableRowProps) 
               alignItems: 'center',
             }}
           >
-            <Avatar alt={row.name} src={row.profilePic} />
+            <Avatar
+              alt={row.name ?? 'User'}
+              src={row.profilePic ? `${API_URL}${row.profilePic}` : undefined}
+            />
 
             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
               <span>{row.name ?? 'N/A'}</span>
