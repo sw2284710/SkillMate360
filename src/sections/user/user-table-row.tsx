@@ -16,12 +16,16 @@ import { Iconify } from 'src/components/iconify';
 // ----------------------------------------------------------------------
 
 export type UserProps = {
-  id: string;
+  _id: string;
   name: string;
+  email: string;
+  phone: string;
   role: string;
   status: string;
-  company: string;
-  avatarUrl: string;
+  gender: string; 
+  educationLevel: string;  
+  educationMedium: string;  
+  profilePic: string;
   isVerified: boolean;
 };
 
@@ -57,25 +61,32 @@ export function UserTableRow({ row, selected, onSelectRow }: UserTableRowProps) 
               alignItems: 'center',
             }}
           >
-            <Avatar alt={row.name} src={row.avatarUrl} />
-            {row.name}
+            <Avatar alt={row.name} src={row.profilePic} />
+
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+              <span>{row.name ?? 'N/A'}</span>
+              <span style={{ fontSize: '0.875rem', color: 'gray' }}>
+                {row.email ?? 'N/A'}
+              </span>
+            </Box>
           </Box>
         </TableCell>
 
-        <TableCell>{row.company}</TableCell>
-
-        <TableCell>{row.role}</TableCell>
+        <TableCell>{row.phone}</TableCell>
+            
+        <TableCell>{row.role.toUpperCase()}</TableCell>
 
         <TableCell align="center">
           {row.isVerified ? (
             <Iconify width={22} icon="solar:check-circle-bold" sx={{ color: 'success.main' }} />
           ) : (
-            '-'
+            <Iconify width={22} icon="solar:check-circle-bold" sx={{ color: 'success.main' }} />
           )}
         </TableCell>
 
         <TableCell>
-          <Label color={(row.status === 'banned' && 'error') || 'success'}>{row.status}</Label>
+          {/* <Label color={(row.status === 'banned' && 'error') || 'success'}>{row.status}</Label> */}
+          <Label color='success'>Active</Label>
         </TableCell>
 
         <TableCell align="right">

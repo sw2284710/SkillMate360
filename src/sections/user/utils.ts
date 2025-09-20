@@ -70,8 +70,12 @@ export function applyFilter({ inputData, comparator, filterName }: ApplyFilterPr
   inputData = stabilizedThis.map((el) => el[0]);
 
   if (filterName) {
+    const query = filterName.toLowerCase();
     inputData = inputData.filter(
-      (user) => user.name.toLowerCase().indexOf(filterName.toLowerCase()) !== -1
+      (user) =>
+        [user.name, user.email, user.phone, user.role]
+          .filter(Boolean) // remove undefined
+          .some((field) => field!.toLowerCase().includes(query))
     );
   }
 
